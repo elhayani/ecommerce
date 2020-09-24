@@ -1,0 +1,67 @@
+version: '2'
+services:
+    app:
+        image: busybox
+        volumes:
+            - .:/var/www/app
+        tty: true
+        user: "1000"
+    mysql:
+        image: mysql:5.7
+        volumes:
+            - .:/var/www/app
+            - /var/lib/mysql
+        environment:
+            MYSQL_PASSWORD: dev
+            MYSQL_USER: dev
+            MYSQL_DATABASE: project
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    php:
+        image: dockerhub.cwd.at/docker/php/fpm-xdebug:7.2
+        working_dir: /var/www/app
+        user: "1000"
+        volumes_from:
+            - app
+        environment:
+            PHP_XDEBUG_ENABLED: 1
+            PHP_IDE_CONFIG: serverName=docker.local
+            XDEBUG_CONFIG: remote_host=172.17.0.1 remote_port=9000 remote_connect_back=0
+    php2:
+        image: dockerhub.cwd.at/docker/php/fpm-xdebug:7.2
+        working_dir: /var2/www/app
+        user: "1000"
+        volumes_from:
+            - app
+        environment:
+            PHP_XDEBUG_ENABLED: 1
+            PHP_IDE_CONFIG: serverName=docker.local
+            XDEBUG_CONFIG: remote_host=172.17.0.1 remote_port=9000 remote_connect_back=0
+
+
+    apache:
+        image: httpd:2.4.27
+        volumes:
+            - .docker/apache/apache2.conf:/usr/local/apache2/conf/httpd.conf:ro
+            - .:/var/www/app
+        ports:
+            - 8800:80
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin:latest
+        links:
+            - mysql
+        environment:
+            PMA_HOST: mysql
+            PMA_USER: dev
+            PMA_PASSWORD: dev
+        ports:
+            - 8801:80
+
+    maildev:
+        image: djfarrelly/maildev
+        ports:
+            - 8002:80
+#    redis:
+#        image: redis:3.2
+#        volumes:
+#            - /data
